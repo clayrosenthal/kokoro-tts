@@ -32,6 +32,18 @@ languages = [
     "z",  # Mandarin Chinese
 ]
 
+# languages_iso = [
+#     "en_US", # American English
+#     "en_GB",  # British English
+#     "h",  # Hindi
+#     "e",  # Spanish
+#     "f",  # French
+#     "i",  # Italian
+#     "p",  # Brazilian Portuguese
+#     "j",  # Japanese
+#     "z",  # Mandarin Chinese
+# ]
+
 if TYPE_CHECKING:
     from kokoro import KPipeline
 
@@ -66,7 +78,13 @@ def generate_and_save_audio(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Kokoro TTS")
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version='%(prog)s 0.7.17',
+    )
     parser.add_argument(
         "-m",
         "--voice",

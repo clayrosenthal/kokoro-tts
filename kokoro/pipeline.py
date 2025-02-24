@@ -60,6 +60,9 @@ class KPipeline:
 
     A "loud" KPipeline _with_ a model yields (graphemes, phonemes, audio).
     '''
+    # for backward compatibility
+    Result = KPipelineResult
+
     def __init__(
         self,
         lang_code: str,
@@ -355,7 +358,7 @@ class KPipeline:
         speed: Union[float, Callable[[int], float]] = 1,
         split_pattern: Optional[str] = r'\n+',
         model: Optional[KModel] = None
-    ) -> Generator['KPipeline.Result', None, None]:
+    ) -> Generator[KPipelineResult, None, None]:
         model = model or self.model
         if model and voice is None:
             raise ValueError('Specify a voice: en_us_pipeline(text="Hello world!", voice="af_heart")')
