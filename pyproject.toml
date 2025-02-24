@@ -21,7 +21,7 @@ dependencies = [
     "huggingface_hub",
     "loguru",
     "misaki[en]>=0.7.16",
-    "numpy==1.26.4",
+    "numpy>=2.0.0",
     "scipy",
     "torch",
     "transformers"
