@@ -38,6 +38,34 @@ LANG_CODES = dict(
     z='Mandarin Chinese',
 )
 
+@dataclass
+class KPipelineResult:
+    graphemes: str
+    phonemes: str
+    tokens: Optional[List[en.MToken]] = None
+    output: Optional[KModel.Output] = None
+
+    @property
+    def audio(self) -> Optional[torch.FloatTensor]:
+        return None if self.output is None else self.output.audio
+
+    @property
+    def pred_dur(self) -> Optional[torch.LongTensor]:
+        return None if self.output is None else self.output.pred_dur
+
+    ### MARK: BEGIN BACKWARD COMPAT ###
+    def __iter__(self):
+        yield self.graphemes
+        yield self.phonemes
+        yield self.audio
+
+    def __getitem__(self, index):
+        return [self.graphemes, self.phonemes, self.audio][index]
+
+    def __len__(self):
+        return 3
+    #### MARK: END BACKWARD COMPAT ####
+
 class KPipeline:
     '''
     KPipeline is a language-aware support class with 2 main responsibilities:
@@ -60,6 +88,9 @@ class KPipeline:
 
     A "loud" KPipeline _with_ a model yields (graphemes, phonemes, audio).
     '''
+    # for backward compatibility
+    Result = KPipelineResult
+
     def __init__(
         self,
         lang_code: str,
@@ -310,42 +341,14 @@ class KPipeline:
             right = left + space_dur
             i = j + (1 if t.whitespace else 0)
 
-    @dataclass
-    class Result:
-        graphemes: str
-        phonemes: str
-        tokens: Optional[List[en.MToken]] = None
-        output: Optional[KModel.Output] = None
-
-        @property
-        def audio(self) -> Optional[torch.FloatTensor]:
-            return None if self.output is None else self.output.audio
-
-        @property
-        def pred_dur(self) -> Optional[torch.LongTensor]:
-            return None if self.output is None else self.output.pred_dur
-
-        ### MARK: BEGIN BACKWARD COMPAT ###
-        def __iter__(self):
-            yield self.graphemes
-            yield self.phonemes
-            yield self.audio
-
-        def __getitem__(self, index):
-            return [self.graphemes, self.phonemes, self.audio][index]
-
-        def __len__(self):
-            return 3
-        #### MARK: END BACKWARD COMPAT ####
-
     def __call__(
         self,
         text: Union[str, List[str]],
         voice: Optional[str] = None,
-        speed: Number = 1,
+        speed: int = 1,
         split_pattern: Optional[str] = r'\n+',
         model: Optional[KModel] = None
-    ) -> Generator['KPipeline.Result', None, None]:
+    ) -> Generator[KPipelineResult, None, None]:
         model = model or self.model
         if model and voice is None:
             raise ValueError('Specify a voice: en_us_pipeline(text="Hello world!", voice="af_heart")')

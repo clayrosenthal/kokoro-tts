@@ -1,4 +1,4 @@
-__version__ = '0.7.16'
+__version__ = '0.7.17'
 
 from loguru import logger
 import sys
@@ -19,5 +19,10 @@ logger.add(
 # Disable before release or as needed
 logger.disable("kokoro")
 
+# from .__main__ import generate_and_save_audio, generate_audio
 from .model import KModel
-from .pipeline import KPipeline
+from .pipeline import KPipeline, KPipelineResult
+from .voices import VoiceInfo, Voice
+
+__all__ = ["KModel", "KPipeline", "KPipelineResult", "VoiceInfo", "Voice"]
+
