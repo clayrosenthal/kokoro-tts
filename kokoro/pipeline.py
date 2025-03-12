@@ -1,4 +1,5 @@
 from .model import KModel
+from .voices import KLanguage, KVoiceOption, KLANGUAGE_ALIASES
 from dataclasses import dataclass
 from huggingface_hub import hf_hub_download
 from loguru import logger
@@ -7,17 +8,6 @@ from typing import Callable, Generator, List, Optional, Tuple, Union
 import re
 import torch
 
-ALIASES = {
-    'en-us': 'a',
-    'en-gb': 'b',
-    'es': 'e',
-    'fr-fr': 'f',
-    'hi': 'h',
-    'it': 'i',
-    'pt-br': 'p',
-    'ja': 'j',
-    'zh': 'z',
-}
 
 LANG_CODES = dict(
     # pip install misaki[en]
@@ -60,12 +50,10 @@ class KPipeline:
 
     A "loud" KPipeline _with_ a model yields (graphemes, phonemes, audio).
     '''
-    # for backward compatibility
-    Result = KPipelineResult
 
     def __init__(
         self,
-        lang_code: str,
+        lang_code: Union[str, KLanguage],
         repo_id: Optional[str] = None,
         model: Union[KModel, bool] = True,
         trf: bool = False,
@@ -86,8 +74,11 @@ class KPipeline:
             repo_id = 'hexgrad/Kokoro-82M'
             print(f"WARNING: Defaulting repo_id to {repo_id}. Pass repo_id='{repo_id}' to suppress this warning.")
         self.repo_id = repo_id
-        lang_code = lang_code.lower()
-        lang_code = ALIASES.get(lang_code, lang_code)
+        if isinstance(lang_code, KLanguage):
+            language = lang_code
+        else:
+            language = KLanguage.get_language_by_iso(lang_code)
+        lang_code = language.value
         assert lang_code in LANG_CODES, (lang_code, LANG_CODES)
         self.lang_code = lang_code
         self.model = None
@@ -136,19 +127,23 @@ class KPipeline:
             logger.warning(f"Using EspeakG2P(language='{language}'). Chunking logic not yet implemented, so long texts may be truncated unless you split them with '\\n'.")
             self.g2p = espeak.EspeakG2P(language=language)
 
-    def load_single_voice(self, voice: str):
-        if voice in self.voices:
-            return self.voices[voice]
-        if voice.endswith('.pt'):
-            f = voice
+    def load_single_voice(self, voice: Union[str, KVoiceOption]):
+        if isinstance(voice, KVoiceOption):
+            voice_name = voice.name
         else:
-            f = hf_hub_download(repo_id=self.repo_id, filename=f'voices/{voice}.pt')
-            if not voice.startswith(self.lang_code):
-                v = LANG_CODES.get(voice, voice)
+            voice_name = voice
+        if voice_name in self.voices:
+            return self.voices[voice_name]
+        if voice_name.endswith('.pt'):
+            f = voice_name
+        else:
+            f = hf_hub_download(repo_id=self.repo_id, filename=f'voices/{voice_name}.pt')
+            if not voice_name.startswith(self.lang_code):
+                v = LANG_CODES.get(voice_name, voice_name)
                 p = LANG_CODES.get(self.lang_code, self.lang_code)
                 logger.warning(f'Language mismatch, loading {v} voice into {p} pipeline.')
         pack = torch.load(f, weights_only=True)
-        self.voices[voice] = pack
+        self.voices[voice_name] = pack
         return pack
 
     """
@@ -358,7 +353,7 @@ class KPipeline:
         speed: Union[float, Callable[[int], float]] = 1,
         split_pattern: Optional[str] = r'\n+',
         model: Optional[KModel] = None
-    ) -> Generator[KPipelineResult, None, None]:
+    ) -> Generator['KPipeline.Result', None, None]:
         model = model or self.model
         if model and voice is None:
             raise ValueError('Specify a voice: en_us_pipeline(text="Hello world!", voice="af_heart")')

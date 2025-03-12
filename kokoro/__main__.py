@@ -15,43 +15,25 @@ espeak not installed: `apt-get install espeak-ng`
 import argparse
 import wave
 from pathlib import Path
-from typing import Generator, TYPE_CHECKING
+from typing import Generator, TYPE_CHECKING, Union
 
 import numpy as np
 from loguru import logger
 
-languages = [
-    "a",  # American English
-    "b",  # British English
-    "h",  # Hindi
-    "e",  # Spanish
-    "f",  # French
-    "i",  # Italian
-    "p",  # Brazilian Portuguese
-    "j",  # Japanese
-    "z",  # Mandarin Chinese
-]
-
-# languages_iso = [
-#     "en_US", # American English
-#     "en_GB",  # British English
-#     "h",  # Hindi
-#     "e",  # Spanish
-#     "f",  # French
-#     "i",  # Italian
-#     "p",  # Brazilian Portuguese
-#     "j",  # Japanese
-#     "z",  # Mandarin Chinese
-# ]
+from kokoro.voices import KLanguage, KVoiceOption
 
 if TYPE_CHECKING:
     from kokoro import KPipeline
+    
 
 
 def generate_audio(
-    text: str, kokoro_language: str, voice: str, speed=1
+    text: str, kokoro_language: Union[str, KLanguage], voice: Union[str, KVoiceOption], speed=1
 ) -> Generator["KPipeline.Result", None, None]:
     from kokoro import KPipeline
+
+    if isinstance(voice, KVoiceOption):
+        
 
     if not voice.startswith(kokoro_language):
         logger.warning(f"Voice {voice} is not made for language {kokoro_language}")
@@ -60,7 +42,7 @@ def generate_audio(
 
 
 def generate_and_save_audio(
-    output_file: Path, text: str, kokoro_language: str, voice: str, speed=1
+    output_file: Path, text: str, kokoro_language: Union[str, KLanguage], voice: Union[str, KVoiceOption], speed=1
 ) -> None:
     with wave.open(str(output_file.resolve()), "wb") as wav_file:
         wav_file.setnchannels(1)  # Mono audio
@@ -78,24 +60,25 @@ def generate_and_save_audio(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Kokoro TTS")
+    parser = argparse.ArgumentParser(description="Kokoro Text-to-Speech")
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version='%(prog)s 0.7.17',
+        version='%(prog)s 0.8.2',
     )
     parser.add_argument(
         "-m",
         "--voice",
         default="af_heart",
         help="Voice to use",
+        choices=[v.name for v in KVoiceOption],
     )
     parser.add_argument(
         "-l",
         "--language",
         help="Language to use (defaults to the one corresponding to the voice)",
-        choices=languages,
+        choices=[l.value for l in KLanguage],
     )
     parser.add_argument(
         "-o",

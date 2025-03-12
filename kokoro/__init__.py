@@ -22,7 +22,7 @@ logger.disable("kokoro")
 # from .__main__ import generate_and_save_audio, generate_audio
 from .model import KModel
 from .pipeline import KPipeline
-from .voices import VoiceInfo, Voice
+from .voices import KVoiceInfo, KVoiceOption, KLanguage
 
-__all__ = ["KModel", "KPipeline", "VoiceInfo", "Voice"]
+__all__ = ["KModel", "KPipeline", "KVoiceInfo", "KVoiceOption", "KLanguage"]
 
